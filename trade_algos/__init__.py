@@ -31,7 +31,7 @@ class BaseAlgorithm:
         return self.api.get_barset(symbol, 'minute', limit=1)[symbol][0].c
 
     def clear_account_orders(self):
-        orders = self.api.list_orders(status='all')
+        orders = self.api.list_orders(status='open')
         for order in orders:
             self.api.cancel_order(order.id)
 

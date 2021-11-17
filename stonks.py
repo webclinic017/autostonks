@@ -10,7 +10,7 @@ load_dotenv()
 API_KEY = os.getenv('API_KEY')
 API_SECRET = os.getenv('API_SECRET')
 
-def simple(symbol: str, qty: int, gain: float, loss: float):
+def simple(symbol: str, qty: int = 1, gain: float = 1, loss: float = 1):
     simple_algo = SimpleAlgorithm(API_KEY, API_SECRET)
 
     simple_algo.add_symbol(symbol, qty=qty)

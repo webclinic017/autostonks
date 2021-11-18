@@ -59,6 +59,8 @@ class SimpleAlgorithm(BaseAlgorithm):
 
             while self.holding_count > 0:
                 currTime = clock.timestamp.replace(tzinfo=datetime.timezone.utc).timestamp()
+                if currTime > closingTime:
+                    break
                 # iterate through symbols
                 for symbol in symbols:
                     print('-' * 20)
@@ -81,9 +83,6 @@ class SimpleAlgorithm(BaseAlgorithm):
                         self.place_sell_order(symbol, symbols.get('qty', 1))
                         self.holding_count -= 1
                         print(f'{symbol} sold at {current_price}')
-                    
-                if currTime > closingTime:
-                    break
 
                 # wait a second
                 time.sleep(1)

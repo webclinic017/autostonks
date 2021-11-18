@@ -30,5 +30,10 @@ def copycat(symbol: str, daily_budget_percentage: float, min_bal: float):
 
     copycat.run()
 
+def test(symbol, qty, gain, loss):
+    print(f'{symbol} {qty} {gain} {loss}')
+    print(API_KEY)
+    print(API_SECRET)
+    
 if __name__ == "__main__":
     fire.Fire()

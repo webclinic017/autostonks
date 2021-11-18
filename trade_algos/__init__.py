@@ -1,4 +1,4 @@
-from alpaca_trade_api.rest import REST
+from alpaca_trade_api.rest import REST, APIError
 
 class BaseAlgorithm:
     def __init__(self, API_KEY: str, API_SECRET: str, base_url: str='https://paper-api.alpaca.markets', api_version: str='v2'):
@@ -16,7 +16,13 @@ class BaseAlgorithm:
         return self.symbols.keys()
 
     def get_number_of_shares(self, symbol: str):
-        return float(self.api.get_position(symbol).qty)
+        try:
+            return float(self.api.get_position(symbol).qty)
+        except APIError:
+            return 0
+
+    def get_value_of_shares(self, symbol: str):
+        return self.get_number_of_shares(symbol) * self.get_current_price(symbol)
 
     def get_account_value(self):
         return self.api.get_account().portfolio_value
@@ -32,6 +38,10 @@ class BaseAlgorithm:
 
     def get_current_price(self, symbol: str):
         return float(self.api.get_barset(symbol, 'minute', limit=1)[symbol][0].c)
+    
+    def get_yesterday_price(self, symbol: str):
+        barset = self.api.get_barset(symbol, 'day', limit=2)
+        return float(barset[symbol][-1].c)
 
     def clear_account_orders(self):
         orders = self.api.list_orders(status='open')

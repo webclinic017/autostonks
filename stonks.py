@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import fire
 
 from trade_algos.simple import SimpleAlgorithm
+from trade_algos.copycat import CopyCatAlgorithm
 
 load_dotenv()
 
@@ -20,6 +21,14 @@ def simple(symbol: str, qty: int = 1, gain: float = 1, loss: float = 1):
     
     simple_algo.run()
 
+def copycat(symbol: str, daily_budget_percentage: float, min_bal: float):
+    copycat = CopyCatAlgorithm(API_KEY, API_SECRET)
+
+    copycat.set_etf_symbol(symbol)
+    copycat.set_daily_budget_percent(daily_budget_percentage)
+    copycat.set_min_balance(min_bal)
+
+    copycat.run()
 
 if __name__ == "__main__":
     fire.Fire()

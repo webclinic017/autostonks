@@ -15,6 +15,9 @@ class BaseAlgorithm:
     def get_symbols(self):
         return self.symbols.keys()
 
+    def get_number_of_shares(self, symbol: str):
+        return int(self.api.get_position(symbol).qty)
+
     def get_account_value(self):
         return self.api.get_account().portfolio_value
 
@@ -34,6 +37,15 @@ class BaseAlgorithm:
         orders = self.api.list_orders(status='open')
         for order in orders:
             self.api.cancel_order(order.id)
+
+    def place_notional_order(self, symbol: str, price: float):
+        return self.api.submit_order(
+            symbol=symbol,
+            notional=price,
+            side='buy',
+            type='market',
+            time_in_force='day'
+        )
 
     def place_buy_order(self, symbol: str, qty: int):
         return self.api.submit_order(
@@ -91,6 +103,15 @@ class BaseAlgorithm:
             type='stop',
             time_in_force='day',
             stop_price=stop_price
+        )
+
+    def sell_notional_order(self, symbol: str, price: float):
+        return self.api.submit_order(
+            symbol=symbol,
+            notional=price,
+            side='sell',
+            type='market',
+            time_in_force='day'
         )
 
     def run(self):

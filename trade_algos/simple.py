@@ -28,7 +28,7 @@ class SimpleAlgorithm(BaseAlgorithm):
 
     def run(self):
         while True:
-            clock = self.alpaca.get_clock()
+            clock = self.api.get_clock()
 
             if not clock.is_open:
                 time.sleep(60)

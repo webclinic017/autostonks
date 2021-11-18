@@ -16,22 +16,22 @@ class BaseAlgorithm:
         return self.symbols.keys()
 
     def get_number_of_shares(self, symbol: str):
-        return int(self.api.get_position(symbol).qty)
+        return float(self.api.get_position(symbol).qty)
 
     def get_account_value(self):
         return self.api.get_account().portfolio_value
 
     def get_account_cash(self):
-        return self.api.get_account().cash
+        return float(self.api.get_account().cash)
     
     def get_account_buying_power(self):
-        return self.api.get_account().buying_power
+        return float(self.api.get_account().buying_power)
 
     def get_account_equity(self):
-        return self.api.get_account().equity
+        return float(self.api.get_account().equity)
 
     def get_current_price(self, symbol: str):
-        return self.api.get_barset(symbol, 'minute', limit=1)[symbol][0].c
+        return float(self.api.get_barset(symbol, 'minute', limit=1)[symbol][0].c)
 
     def clear_account_orders(self):
         orders = self.api.list_orders(status='open')

@@ -10,27 +10,32 @@ class Ark:
 
     def get_etf_trades(self, symbol, start_date=None, end_date=None, limit=None):
         if start_date is None:
-            start_date = arrow.utcnow().replace(days=-1).format('YYYY-MM-DD')
+            start_date = arrow.utcnow().shift(days=-1).format('YYYY-MM-DD')
         if end_date is None:
             end_date = arrow.utcnow().format('YYYY-MM-DD')
         if limit is None:
             limit = 100
-        url = self.API_URL + '/etf/trades' + symbol
-        params = {'start_date': start_date, 'end_date': end_date, 'limit': limit}
+        url = self.API_URL + '/etf/trades'
+        params = {'symbol': symbol, 'start_date': start_date, 'end_date': end_date, 'limit': limit}
         r = requests.get(url, params=params)
         return r.json()
 
     def get_etf_holdings(self, symbol, start_date=None, end_date=None, limit=None):
         if start_date is None:
-            start_date = arrow.utcnow().replace(days=-1).format('YYYY-MM-DD')
+            start_date = arrow.utcnow().shift(days=-1).format('YYYY-MM-DD')
         if end_date is None:
             end_date = arrow.utcnow().format('YYYY-MM-DD')
         if limit is None:
             limit = 100
-        url = self.API_URL + '/etf/holdings' + symbol
-        params = {'start_date': start_date, 'end_date': end_date, 'limit': limit}
+        url = self.API_URL + '/etf/holdings'
+        params = {'symbol': symbol, 'start_date': start_date, 'end_date': end_date, 'limit': limit}
         r = requests.get(url, params=params)
         return r.json()
+
+if __name__ == '__main__':
+    ark = Ark()
+    print(ark.get_etf_holdings('ARKK'))
+    print(ark.get_etf_trades('ARKK'))
 
 ''' Output of ETF trades:
 {

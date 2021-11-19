@@ -25,8 +25,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Set Up Cross Build
+        run: |
+          docker run --privileged --rm tonistiigi/binfmt --install all
+          docker buildx install
+
       - name: Build image
-        run: docker build . --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}"
+        run: docker build . --platform linux/arm/v7,linux/amd64,linux/arm64 --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}"
 
       - name: Log in to registry
         # This is where you will update the PAT to GITHUB_TOKEN

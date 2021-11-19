@@ -17,8 +17,8 @@ class CopyCatAlgorithm(BaseAlgorithm):
 
     def run(self):
         ark = Ark()
-        traded_today = False
         while True:
+            traded_today = self.has_traded_today()
             clock = None
             try:
                 clock = self.api.get_clock()
@@ -28,7 +28,6 @@ class CopyCatAlgorithm(BaseAlgorithm):
                 continue
 
             if traded_today:
-                traded_today = False
                 time.sleep(60 * 60 * 11)
                 print("Sleeping until next data upload.")
 
@@ -101,14 +100,17 @@ class CopyCatAlgorithm(BaseAlgorithm):
                         percent_diff = 1 - (calculated_purchases[purchase_symbol] / price)
                         if percent_diff < 0.1 and shares <= 0:
                             shares = 1
-                        self.api.submit_order(
-                            symbol=purchase_symbol,
-                            qty=shares,
-                            side='buy',
-                            type='market',
-                            time_in_force='day'
-                        )
-                        print(f"Submitted order to purchase {shares} shares of {purchase_symbol}")
+                        if shares > 0:
+                            self.api.submit_order(
+                                symbol=purchase_symbol,
+                                qty=shares,
+                                side='buy',
+                                type='market',
+                                time_in_force='day'
+                            )
+                            print(f"Submitted order to purchase {shares} shares of {purchase_symbol}")
+                        else:
+                            print(f"Cannot purchase {purchase_symbol}, skipping...")
                     else:
                         raise e
 
@@ -129,16 +131,18 @@ class CopyCatAlgorithm(BaseAlgorithm):
                         print(f"Cannot sell {sell_symbol} as fractional. Recalculating...")
                         price = self.get_current_price(sell_symbol)
                         shares = math.floor(calculated_sells[sell_symbol] / price)
-                        self.api.submit_order(
-                            symbol=sell_symbol,
-                            qty=shares,
-                            side='sell',
-                            type='market',
-                            time_in_force='day'
-                        )
-                        print(f"Submitted order to sell {shares} shares of {sell_symbol}")
+                        if shares > 0:
+                            self.api.submit_order(
+                                symbol=sell_symbol,
+                                qty=shares,
+                                side='sell',
+                                type='market',
+                                time_in_force='day'
+                            )
+                            print(f"Submitted order to sell {shares} shares of {sell_symbol}")
+                        else:
+                            print(f"Cannot sell {sell_symbol} as fractional. Skipping...")
                     else:
                         raise e
 
-            traded_today = True
             print("Done trading for the day.")

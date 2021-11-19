@@ -1,4 +1,5 @@
 from alpaca_trade_api.rest import REST, APIError
+import arrow
 
 class BaseAlgorithm:
     def __init__(self, API_KEY: str, API_SECRET: str, base_url: str='https://paper-api.alpaca.markets', api_version: str='v2'):
@@ -20,6 +21,16 @@ class BaseAlgorithm:
             return float(self.api.get_position(symbol).qty)
         except APIError:
             return 0
+    
+    def has_traded_today(self):
+        # get the now timestamp
+        now = arrow.now().format('YYYY-MM-DD')
+        # get all orders after the now timestamp
+        orders = self.api.list_orders(after=now, status='closed', limit=500)
+
+        clock = self.api.get_clock()
+        
+        return len(orders) > 0 and clock.is_open
 
     def get_value_of_shares(self, symbol: str):
         return self.get_number_of_shares(symbol) * self.get_current_price(symbol)

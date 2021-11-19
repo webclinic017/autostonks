@@ -62,10 +62,12 @@ def yesterday(symbol: str):
     print(base.get_yesterday_price(symbol))
 
 
-def test(symbol, qty, gain, loss):
-    print(f'{symbol} {qty} {gain} {loss}')
-    print(API_KEY)
-    print(API_SECRET)
+def test():
+    # print(f'{symbol} {qty} {gain} {loss}')
+    # print(API_KEY)
+    # print(API_SECRET)
+    base = BaseAlgorithm(API_KEY, API_SECRET)
+    print(base.has_traded_today())
     
 if __name__ == "__main__":
     fire.Fire()

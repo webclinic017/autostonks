@@ -49,7 +49,11 @@ class BaseAlgorithm:
 
     def get_current_price(self, symbol: str):
         return float(self.api.get_barset(symbol, 'minute', limit=1)[symbol][0].c)
-    
+
+    def get_current_crypto_price(self, symbol: str, exchange: str='CBSE'):
+        q = self.api.get_latest_crypto_quote(symbol + 'USD', exchange)
+        return float(q.ap)
+
     def get_yesterday_price(self, symbol: str):
         barset = self.api.get_barset(symbol, 'day', limit=2)
         return float(barset[symbol][-1].c)

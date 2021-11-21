@@ -67,7 +67,7 @@ def test():
     # print(API_KEY)
     # print(API_SECRET)
     base = BaseAlgorithm(API_KEY, API_SECRET)
-    print(base.has_traded_today())
+    print(base.get_current_crypto_price('ETH'))
     
 if __name__ == "__main__":
     fire.Fire()

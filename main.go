@@ -13,8 +13,14 @@ func main() {
 	err := godotenv.Load()
 
 	if err != nil {
-		fmt.Println("Error loading .env file")
-		return
+		fmt.Println("Dotenv not found, checking environment...")
+		// check environment for API_KEY and API_SECRET
+		if os.Getenv("API_KEY") == "" || os.Getenv("API_SECRET") == "" {
+			fmt.Println("API_KEY and API_SECRET not found in environment!")
+			os.Exit(1)
+		} else {
+			fmt.Println("API_KEY and API_SECRET found in environment.")
+		}
 	}
 
 	// Create new parser object
@@ -22,7 +28,7 @@ func main() {
 	// Create string flag
 	t := parser.Flag("t", "test", &argparse.Options{Required: false, Help: "Prints arguments and exits."})
 	a := parser.String("a", "algorithm", &argparse.Options{Required: true, Help: "Algorithm to use."})
-	s := parser.String("s", "symbol", &argparse.Options{Required: true, Help: "Symbol to buy or sell."})
+	s := parser.String("s", "symbol", &argparse.Options{Required: false, Help: "Symbol to buy or sell."})
 	// Parse input
 	err = parser.Parse(os.Args)
 	if err != nil {
@@ -37,6 +43,6 @@ func main() {
 	if *t {
 		fmt.Println("Algorithm:", algorithm)
 		fmt.Println("Symbol:", symbol)
-		return
+		os.Exit(0)
 	}
 }

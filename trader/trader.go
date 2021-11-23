@@ -1,6 +1,8 @@
 package trader
 
 import (
+	"sort"
+
 	"github.com/alpacahq/alpaca-trade-api-go/v2/alpaca"
 	"github.com/alpacahq/alpaca-trade-api-go/v2/marketdata"
 	"github.com/shopspring/decimal"
@@ -271,3 +273,36 @@ func (trader *Trader) IsMarketOpen() (bool, error) {
 	return clock.IsOpen, nil
 }
 
+// Gets the buy price for a given stock
+func (trader *Trader) GetBuyPrice(ticker string) (float64, error) {
+
+	status := "closed"
+	
+
+	orders, err := trader.ApiClient.ListOrders(&status, nil, nil, nil)
+
+	if err != nil {
+		return 0, err
+	}
+
+	// sort orders by newest first
+	sort.Slice(orders, func(i, j int) bool {
+		return orders[i].CreatedAt.After(orders[j].CreatedAt)
+	})
+
+	zero := decimal.NewFromFloat(0)
+	
+	// get the latest order for the given ticker
+	order := alpaca.Order{
+		LimitPrice: &zero,
+	}
+
+	for _, o := range orders {
+		if o.Symbol == ticker {
+			order = o
+			break
+		}
+	}
+
+	return order.LimitPrice.InexactFloat64(), nil
+}

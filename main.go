@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/CasualCodersProjects/autostonks/ark"
+	"github.com/CasualCodersProjects/autostonks/trade_algos"
 	"github.com/akamensky/argparse"
 	"github.com/joho/godotenv"
 )
@@ -32,6 +33,7 @@ func main() {
 	s := parser.String("s", "symbol", &argparse.Options{Required: false, Help: "Symbol to buy or sell."})
 	d := parser.Flag("d", "data", &argparse.Options{Required: false, Help: "Data retreval mode."})
 	m := parser.String("m", "mode", &argparse.Options{Required: false, Help: "Mode to run in."})
+	f := parser.String("f", "file", &argparse.Options{Required: false, Help: "File to read from. Should be CSV."})
 	// Parse input
 	err = parser.Parse(os.Args)
 	if err != nil {
@@ -43,6 +45,7 @@ func main() {
 	algorithm := *a
 	symbol := *s
 	mode := *m
+	file := *f
 	
 	if *t {
 		fmt.Println("Algorithm:", algorithm)
@@ -73,5 +76,13 @@ func main() {
 		}
 		os.Exit(0)
 	}
-
+	
+	switch algorithm {
+	case "simple":
+		fmt.Println("Starting simple algorithm....")
+		trade_algos.SimpleAlgorithm(file)
+	default:
+		fmt.Println("Algorithm not found!")
+		os.Exit(1)
+	}
 }

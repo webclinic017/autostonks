@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/CasualCodersProjects/autostonks/ark"
 	"github.com/akamensky/argparse"
 	"github.com/joho/godotenv"
 )
@@ -27,8 +28,10 @@ func main() {
 	parser := argparse.NewParser("autostonks", "Buys and sells stocks on the Alpaca Market based on a set of algorithms.")
 	// Create string flag
 	t := parser.Flag("t", "test", &argparse.Options{Required: false, Help: "Prints arguments and exits."})
-	a := parser.String("a", "algorithm", &argparse.Options{Required: true, Help: "Algorithm to use."})
+	a := parser.String("a", "algorithm", &argparse.Options{Required: false, Help: "Algorithm to use."})
 	s := parser.String("s", "symbol", &argparse.Options{Required: false, Help: "Symbol to buy or sell."})
+	d := parser.Flag("d", "data", &argparse.Options{Required: false, Help: "Data retreval mode."})
+	m := parser.String("m", "mode", &argparse.Options{Required: false, Help: "Mode to run in."})
 	// Parse input
 	err = parser.Parse(os.Args)
 	if err != nil {
@@ -39,10 +42,36 @@ func main() {
 	
 	algorithm := *a
 	symbol := *s
-
+	mode := *m
+	
 	if *t {
 		fmt.Println("Algorithm:", algorithm)
 		fmt.Println("Symbol:", symbol)
 		os.Exit(0)
 	}
+
+	if *d {
+		switch mode {
+		case "ark/trades":
+			tradeResponse, err := ark.GetETFTrades(symbol)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			for _, trade := range tradeResponse.Trades {
+				fmt.Println(trade)
+			}
+		case "ark/holdings":
+			holdingsResponse, err := ark.GetETFHoldings(symbol)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			for _, holding := range holdingsResponse.Holdings {
+				fmt.Println(holding)
+			}
+		}
+		os.Exit(0)
+	}
+
 }

@@ -7,12 +7,14 @@ import (
 	"github.com/uniplaces/carbon"
 )
 
+// Trader is a wrapper for the Alpaca API. Wraps both Market Data and Trading API.
 type Trader struct {
 	MarketData marketdata.Client 
 	ApiClient alpaca.Client
 }
 
-func NewTrader(apiKey string, apiSecret string) *Trader {
+// Returns a new trader object.
+func NewTrader(apiKey, apiSecret, alpacaURL string) *Trader {
 
 	marketDataParams := marketdata.ClientOpts{
 		ApiKey:  apiKey,
@@ -22,6 +24,7 @@ func NewTrader(apiKey string, apiSecret string) *Trader {
 	apiClientParams := alpaca.ClientOpts{
 		ApiKey:  apiKey,
 		ApiSecret: apiSecret,
+		BaseURL: alpacaURL,
 	}
 
 	return &Trader{
@@ -31,8 +34,7 @@ func NewTrader(apiKey string, apiSecret string) *Trader {
 }
 
 
-// get number of shares the user owns for a given
-// ticker symbol
+// Gets number of shares the user owns for a given ticker symbol.
 func (trader *Trader) GetNumberOfShares(ticker string) (float64, error) {
 	// get the number of shares a user owns
 	position, err := trader.ApiClient.GetPosition(ticker)
@@ -44,6 +46,7 @@ func (trader *Trader) GetNumberOfShares(ticker string) (float64, error) {
 	return position.Qty.InexactFloat64(), nil
 }
 
+// Gets the current value of the user's shares for a given ticker.
 func (trader *Trader) GetCurrentValueOfShares(ticker string) (float64, error) {
 	shares, err := trader.GetNumberOfShares(ticker)
 
@@ -60,6 +63,7 @@ func (trader *Trader) GetCurrentValueOfShares(ticker string) (float64, error) {
 	return shares * price, nil
 }
 
+// Checks if the user had traded today.
 func (trader *Trader) HasTradedToday() (bool, error) {
 	status := "closed"
 	limit := 500
@@ -87,6 +91,7 @@ func (trader *Trader) HasTradedToday() (bool, error) {
 	return false, nil
 }
 
+// Gets the current account portfolio value.
 func (trader *Trader) GetAccountValue(ticker string) (float64, error) {
 	account, err := trader.ApiClient.GetAccount()
 
@@ -97,6 +102,7 @@ func (trader *Trader) GetAccountValue(ticker string) (float64, error) {
 	return account.PortfolioValue.InexactFloat64(), nil
 }
 
+// Gets the current account cash.
 func (trader *Trader) GetAccountCash() (float64, error) {
 	account, err := trader.ApiClient.GetAccount()
 
@@ -107,6 +113,7 @@ func (trader *Trader) GetAccountCash() (float64, error) {
 	return account.Cash.InexactFloat64(), nil
 }
 
+// Gets the current account equity.
 func (trader *Trader) GetAccountEquity() (float64, error) {
 	account, err := trader.ApiClient.GetAccount()
 
@@ -117,6 +124,7 @@ func (trader *Trader) GetAccountEquity() (float64, error) {
 	return account.Equity.InexactFloat64(), nil
 }
 
+// Gets the current account buying power.
 func (trader *Trader) GetAccountBuyingPower() (float64, error) {
 	account, err := trader.ApiClient.GetAccount()
 
@@ -127,6 +135,7 @@ func (trader *Trader) GetAccountBuyingPower() (float64, error) {
 	return account.BuyingPower.InexactFloat64(), nil
 }
 
+// Cancels all open orders.
 func (trader *Trader) ClearOrders() error {
 	status := "open"
 	limit := 500
@@ -147,6 +156,7 @@ func (trader *Trader) ClearOrders() error {
 	return nil
 }
 
+// Buys notional stocks. Ticker is the stock ticker symbol. Notional is the amount of shares you want to buy in currency.
 func (trader *Trader) BuyNotional(ticker string, notional float64) error {
 
 	notionalDecimal := decimal.NewFromFloat(notional)
@@ -164,6 +174,7 @@ func (trader *Trader) BuyNotional(ticker string, notional float64) error {
 	return err
 }
 
+// Sells notional stocks. Ticker is the stock ticker symbol. Notional is the amount of shares you want to sell in currency.
 func (trader *Trader) SellNotional(ticker string, notional float64) error {
 
 	notionalDecimal := decimal.NewFromFloat(notional)
@@ -181,6 +192,7 @@ func (trader *Trader) SellNotional(ticker string, notional float64) error {
 	return err
 }
 
+// Buys a number of shares. Ticker is the stock ticker symbol. Qty is the number of shares you want to buy.
 func (trader *Trader) Buy(ticker string, qty float64) error {
 	
 	qtyDecimal := decimal.NewFromFloat(qty)
@@ -198,6 +210,7 @@ func (trader *Trader) Buy(ticker string, qty float64) error {
 	return err
 }
 
+// Sells a number of shares. Ticker is the stock ticker symbol. Qty is the number of shares you want to sell.
 func (trader *Trader) Sell(ticker string, qty float64) error {
 	
 	qtyDecimal := decimal.NewFromFloat(qty)
@@ -215,7 +228,7 @@ func (trader *Trader) Sell(ticker string, qty float64) error {
 	return err
 }
 
-// get current price for a given ticker symbol
+// Get the current price of a stock. Ticker is the stock ticker symbol.
 func (trader *Trader) GetPrice(ticker string) (float64, error) {
 	
 	bar, err := trader.MarketData.GetLatestBar(ticker)
@@ -227,7 +240,7 @@ func (trader *Trader) GetPrice(ticker string) (float64, error) {
 	return bar.Close, nil
 }
 
-// get current price for a given crypto
+// Get the current price of a cryptocurrency. Crypto is the symbol of the cryptocurrency.
 func (trader *Trader) GetCryptoPrice(crypto string) (float64, error) {
 
 	params := marketdata.GetCryptoBarsParams{
@@ -245,7 +258,7 @@ func (trader *Trader) GetCryptoPrice(crypto string) (float64, error) {
 	return bar.Close, nil
 }
 
-// is the market open
+// Checks if the market is open. 
 func (trader *Trader) IsMarketOpen() (bool, error) {
 	
 	// get clock

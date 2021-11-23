@@ -4,10 +4,14 @@ import (
 	"github.com/imroc/req"
 )
 
+// Base URL for the ARK data API.
 const ARK_BASE_URL string = "https://arkfunds.io/api"
+// API Version
 const ARK_VERSION string = "v2"
+// Combined URL that is executed
 const ARK_URL string = ARK_BASE_URL + "/" + ARK_VERSION
 
+// ETFHolding represents a single holding of an ETF.
 type ETFHolding struct {
 	Ticker string `json:"ticker"`
 	Shares float64  `json:"shares"`
@@ -21,6 +25,7 @@ type ETFHolding struct {
 	WeightRank int `json:"weight_rank"`
 }
 
+// Represents list of holdings for an ETF.
 type ETFHoldingResponse struct {
 	Holdings []ETFHolding `json:"holdings"`
 	DateTo string `json:"date_to"`
@@ -28,7 +33,7 @@ type ETFHoldingResponse struct {
 	Symbol string `json:"symbol"`
 }
 
-
+// Gets the ETF holdings for a given ticker.
 func GetETFHoldings(symbol string) (ETFHoldingResponse, error) {
 	url := ARK_URL + "/etf/holdings"
 	
@@ -54,6 +59,7 @@ func GetETFHoldings(symbol string) (ETFHoldingResponse, error) {
 	return holdings, nil
 }
 
+// ETFTrade represents a single trade for an ETF.
 type ETFTrade struct {
 	Ticker string `json:"ticker"`
 	Company string `json:"company"`
@@ -65,6 +71,7 @@ type ETFTrade struct {
 	Cusip string `json:"cusip"`
 }
 
+// ETFTradesResponse represents a response from the ARK API for a list of trades for an ETF.
 type ETFTradesResponse struct {
 	Trades []ETFTrade `json:"trades"`
 	DateTo string `json:"date_to"`
@@ -72,6 +79,7 @@ type ETFTradesResponse struct {
 	Symbol string `json:"symbol"`
 }
 
+// Gets the ETF trades for a given ticker.
 func GetETFTrades(symbol string) (ETFTradesResponse, error) {
 	url := ARK_URL + "/etf/trades"
 

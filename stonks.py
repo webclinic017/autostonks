@@ -1,14 +1,17 @@
-import os
+from typing import List
 import json
+import os
 
-from dotenv import load_dotenv
-import fire
-from trade_algos import BaseAlgorithm
 import arrow
+import fire
+from dotenv import load_dotenv
 
-from trade_algos.simple import SimpleAlgorithm
-from trade_algos.copycat import CopyCatAlgorithm
 from ark_wrapper import Ark
+from trade_algos import BaseAlgorithm
+from trade_algos.copycat import CopyCatAlgorithm
+from trade_algos.simple import SimpleAlgorithm
+from trade_algos.mean_reversion import MeanReversionAlgorithm
+from utils import get_all_ark_holdings
 
 load_dotenv()
 
@@ -61,6 +64,15 @@ def yesterday(symbol: str):
     base = BaseAlgorithm(API_KEY, API_SECRET)
     print(base.get_yesterday_price(symbol))
 
+def mean(symbol: str, timeframe: str = 'month'):
+    mean_reversion = MeanReversionAlgorithm(API_KEY, API_SECRET)
+    print(mean_reversion.mean([symbol], timeframe)[symbol])
+
+def mean_reversion(symbols: List[str] | None = None, output: bool = False):
+    mean_reversion = MeanReversionAlgorithm(API_KEY, API_SECRET)
+    if symbols is None:
+        symbols = get_all_ark_holdings()
+    mean_reversion.run(symbols, output)
 
 def test():
     # print(f'{symbol} {qty} {gain} {loss}')

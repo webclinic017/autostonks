@@ -34,8 +34,8 @@ class Ark:
 
 if __name__ == '__main__':
     ark = Ark()
-    print(ark.get_etf_holdings('ARKK'))
-    print(ark.get_etf_trades('ARKK'))
+    print(ark.get_etf_holdings('PRNT'))
+    print(ark.get_etf_trades('ARKW'))
 
 ''' Output of ETF trades:
 {

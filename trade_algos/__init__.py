@@ -1,6 +1,5 @@
 from alpaca_trade_api.rest import REST, APIError
 import arrow
-
 class BaseAlgorithm:
     def __init__(self, API_KEY: str, API_SECRET: str, base_url: str='https://paper-api.alpaca.markets', api_version: str='v2'):
         self.api = REST(API_KEY, API_SECRET, base_url=base_url, api_version=api_version)

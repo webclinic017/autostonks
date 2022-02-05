@@ -75,4 +75,9 @@ class MeanReversionAlgorithm(BaseAlgorithm):
             with open('mean_reversion.json', 'w') as outfile:
                 json.dump(sorted_values, outfile, indent=4)
         
-        
+        # how the algorithm should work
+        # it will be a tiered system
+        # top 10 stocks will be 75% of the portfolio
+        # bottom 10 stocks will be 25% of the portfolio
+        # if a stock has a negative roc, sell all of it and rebalance the bottom half
+        # if a stock goes up to the top 10, rebalance the top 10, move bottom stock to bottom 10

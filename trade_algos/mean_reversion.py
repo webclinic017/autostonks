@@ -14,6 +14,12 @@ class MeanReversionAlgorithm(BaseAlgorithm):
     def set_tickers(self, tickers: List[str]):
         self.tickers = tickers
 
+    def set_total_starting_value(self, total_starting_value: float | None = None):
+        if total_starting_value:
+            self.total_starting_value = total_starting_value
+        else:
+            self.total_starting_value = self.get_account_cash()
+
     def mean(self, symbols: List[str], timeframe: str = 'month'):
         alpaca_timeframe = TimeFrame(1, TimeFrameUnit.Hour)
         start_date = arrow.now().shift(months=-1)
@@ -21,7 +27,7 @@ class MeanReversionAlgorithm(BaseAlgorithm):
             start_date = arrow.now().shift(days=-1)
         if timeframe == 'week':
             start_date = arrow.now().shift(weeks=-1)
-        today = arrow.now().shift(minutes=-15)
+        today = arrow.now().shift(minutes=-30)
         try:
             bars = self.api.get_bars(symbols, alpaca_timeframe, start=start_date.isoformat(), end=today.isoformat(), limit=10000)
         except requests.exceptions.HTTPError as e:
@@ -74,6 +80,7 @@ class MeanReversionAlgorithm(BaseAlgorithm):
             # output to json file
             with open('mean_reversion.json', 'w') as outfile:
                 json.dump(sorted_values, outfile, indent=4)
+                
         
         # how the algorithm should work
         # it will be a tiered system

@@ -17,9 +17,11 @@ def get_all_ark_holdings():
     funds = ['ARKK', 'ARKW', 'ARKQ', 'ARKG', 'ARKF', 'ARKX', 'PRNT', 'IZRL', 'CTRU']
     invalid_chars = string.punctuation + string.whitespace + string.digits
     tickers = []
+    print('Getting ARK Holdings', end='')
     for fund in funds:
-        print('Getting tickers for ' + fund)
+        print('.', end='')
         tickers += get_ark_tickers(fund)
+    print('')
     print('Filtering and sorting')
     # remove duplicates
     tickers = list(set(tickers))

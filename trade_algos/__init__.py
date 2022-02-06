@@ -31,6 +31,12 @@ class BaseAlgorithm:
         
         return len(orders) > 0 and clock.is_open
 
+    def get_portfolio(self, raw: bool=False):
+        self.api._use_raw_data = raw
+        positions = self.api.list_positions()
+        self.api._use_raw_data = False
+        return positions
+
     def get_value_of_shares(self, symbol: str):
         return self.get_number_of_shares(symbol) * self.get_current_price(symbol)
 

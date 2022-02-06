@@ -80,6 +80,10 @@ def test():
     # print(API_SECRET)
     base = BaseAlgorithm(API_KEY, API_SECRET)
     print(base.get_current_crypto_price('ETH'))
+
+def portfolio():
+    base = BaseAlgorithm(API_KEY, API_SECRET)
+    print(json.dumps(base.get_portfolio(raw=True), indent=4))
     
 if __name__ == "__main__":
     fire.Fire()

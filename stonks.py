@@ -68,11 +68,22 @@ def mean(symbol: str, timeframe: str = 'month'):
     mean_reversion = MeanReversionAlgorithm(API_KEY, API_SECRET)
     print(mean_reversion.mean([symbol], timeframe)[symbol])
 
-def mean_reversion(symbols: List[str] | None = None, output: bool = False):
+def mean_reversion(symbols: List[str] | None = None, ticker_file: str = './tickers.txt', cache_means: bool = False, cache_filename: str = './mean_reversion.json', budget: float = 0.0, testing: bool = False):
     mean_reversion = MeanReversionAlgorithm(API_KEY, API_SECRET)
-    if symbols is None:
+    ticker_file_exists = os.path.exists(ticker_file)
+    if symbols is None and not ticker_file_exists:
         symbols = get_all_ark_holdings()
-    mean_reversion.run(symbols, output)
+        for symbol in symbols:
+            with open(ticker_file, 'a') as f:
+                f.write(f'{symbol}\n')
+    with open(ticker_file, 'r') as f:
+        symbols = [line.strip() for line in f.readlines()]
+
+    if testing:
+        cache_means = True
+
+    mean_reversion.set_budget(budget)
+    mean_reversion.run(symbols, cache_means, cache_filename, testing)
 
 def test():
     # print(f'{symbol} {qty} {gain} {loss}')

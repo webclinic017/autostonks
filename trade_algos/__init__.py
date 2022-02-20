@@ -77,19 +77,19 @@ class BaseAlgorithm:
             time_in_force='day'
         )
 
-    def place_buy_order(self, symbol: str, qty: int):
+    def place_buy_order(self, symbol: str, qty: float | int):
         return self.api.submit_order(
             symbol=symbol,
-            qty=qty,
+            qty=float(qty),
             side='buy',
             type='market',
             time_in_force='day'
         )
 
-    def place_sell_order(self, symbol: str, qty: int):
+    def place_sell_order(self, symbol: str, qty: float | int):
         return self.api.submit_order(
             symbol=symbol,
-            qty=qty,
+            qty=float(qty),
             side='sell',
             type='market',
             time_in_force='day'

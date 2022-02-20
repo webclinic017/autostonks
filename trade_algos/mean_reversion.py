@@ -1,7 +1,9 @@
 from collections import OrderedDict
+import os
+import time
 from typing import List
 import json
-
+from datetime import timedelta
 
 import arrow
 from alpaca_trade_api import TimeFrame, TimeFrameUnit
@@ -10,17 +12,54 @@ import requests
 from . import BaseAlgorithm
 
 class MeanReversionAlgorithm(BaseAlgorithm):
+    budget = 0.0
 
     def set_tickers(self, tickers: List[str]):
-        self.tickers = tickers
+        self.tickers = list(set(tickers))
 
-    def set_total_starting_value(self, total_starting_value: float | None = None):
-        if total_starting_value:
-            self.total_starting_value = total_starting_value
-        else:
-            self.total_starting_value = self.get_account_cash()
+    def set_budget(self, budget: float):
+        self.budget = budget
 
-    def mean(self, symbols: List[str], timeframe: str = 'month'):
+    def create_cache_file(self, data: dict, filename: str):
+        # get the date now
+        now = arrow.utcnow()
+        output_data = {
+            'date': now.isoformat(),
+            'data': data
+        }
+        with open(filename, 'w') as f:
+            json.dump(output_data, f, indent=4)
+
+    def load_cache_file(self, filename: str) -> dict:
+        with open(filename, 'r') as f:
+            data = json.load(f)
+        date = arrow.get(data['date'])
+
+        # check if the cache file is older than 12 hours
+        # if it is, return empty data and delete the file
+        now = arrow.utcnow()
+        if now - date > timedelta(hours=12):
+            os.remove(filename)
+            return {}
+
+        return data['data']
+    
+    def get_owned_positions(self) -> dict:
+        positions = self.get_portfolio(raw=True)
+        owned_positions = {}
+        for position in positions:
+            symbol = position['symbol']
+            shares = float(position['qty'])
+            market_value = float(position['market_value'])
+            avg_entry_price = float(position['avg_entry_price'])
+            owned_positions[symbol] = {
+                'shares': shares, # shares the user owns
+                'market_value': market_value, # market value of the shares
+                'avg_entry_price': avg_entry_price # average buy price of the shares
+            }
+        return owned_positions
+
+    def mean(self, symbols: List[str], timeframe: str = 'month') -> dict:
         alpaca_timeframe = TimeFrame(1, TimeFrameUnit.Hour)
         start_date = arrow.now().shift(months=-1)
         if timeframe == 'day':
@@ -59,32 +98,128 @@ class MeanReversionAlgorithm(BaseAlgorithm):
 
         return means
 
-    def run(self, tickers: List[str], output: bool = False):
+    def calculate_buy_amounts(self, tickers: List[str]) -> dict:
+
+        budget = self.budget
+        cash = self.get_account_cash()
+        if cash < budget or budget == 0:
+            budget = cash
+
+        # get the current market price of each ticker in buy
+        prices = {}
+        buy_amounts = {}
+        for ticker in tickers:
+            prices[ticker] = self.get_current_price(ticker)
+            buy_amounts[ticker] = 0
+
+        current_cost = 0.0
+
+        while True:
+            for ticker in tickers:
+                if current_cost + prices[ticker] <= budget:
+                    buy_amounts[ticker] += 1
+                    current_cost += prices[ticker]
+                else:
+                    return buy_amounts
+            
+
+    def run(self, tickers: List[str], cache_means: bool = False, cache_filename: str = 'mean_reversion.json', testing: bool = False) -> dict:
 
         print('Initialzing Mean Reversion Algorithm')
-        print('Getting Tickers')
-        self.set_tickers(tickers)
+        print('Waiting for market open....')
 
-        values = {}
+        while True:
+            clock = None
+            if not testing:
+                clock = self.api.get_clock()
 
-        print('Running first time analysis.....')
-        for ticker in self.tickers:
-            print('Analyzing {}'.format(ticker))
-            roc = self.mean([ticker])
-            if roc:
-                values[ticker] = roc[ticker]
+                if not clock.is_open:
+                    time.sleep(60)
+                    continue
 
-        sorted_values = OrderedDict(sorted(values.items(), key=lambda x: x[1], reverse=True))
-        
-        if output:
-            # output to json file
-            with open('mean_reversion.json', 'w') as outfile:
-                json.dump(sorted_values, outfile, indent=4)
+            sell = []
+
+            print('-' * 20)
+            print('Market Open! Good morning!')
+            # pretty print the current local time to console
+            print('The date and time is currently', end=' ')
+            print(arrow.now().format('YYYY-MM-DD HH:mm:ss'))
+
+            print('Getting tickers...')
+            owned_positions = self.get_owned_positions()
+            owned_tickers = list(owned_positions.keys())
+            self.set_tickers(tickers + owned_tickers)
+            
+            print('Clearing orders...')
+            # clear existing orders
+            self.clear_account_orders()
+
+            values = {}
+            cache_invalid = False
+
+            print('Running analysis.....')
+
+            if cache_means and os.path.isfile(cache_filename):
+                print('Loading cached means from {}'.format(cache_filename))
+                values = self.load_cache_file(cache_filename)
+
+            if not values:
+                cache_invalid = True
+                print('Calculating means.....')
+                values = self.mean(self.tickers, 'week')
+                if not values:
+                    print('There was an issue getting data in bulk. Trying again...')
+                    roc = self.mean(self.tickers, 'week')
+                    if roc:
+                        values[ticker] = roc[ticker]
                 
-        
-        # how the algorithm should work
-        # it will be a tiered system
-        # top 10 stocks will be 75% of the portfolio
-        # bottom 10 stocks will be 25% of the portfolio
-        # if a stock has a negative roc, sell all of it and rebalance the bottom half
-        # if a stock goes up to the top 10, rebalance the top 10, move bottom stock to bottom 10
+            sorted_values = OrderedDict(sorted(values.items(), key=lambda x: x[1], reverse=True))
+            
+            if cache_means and cache_invalid:
+                # output to json file
+                self.create_cache_file(sorted_values, cache_filename)
+                    
+            # get all tickers with a mean reversion greater than 0
+            tickers = []
+            for ticker in sorted_values:
+                if sorted_values[ticker] > 0:
+                    tickers.append(ticker)
+            
+            for ticker in self.tickers:
+                if not ticker in tickers and ticker in owned_tickers:
+                    sell.append(ticker)
+                
+            print(f'Selling tickers: {sell}')
+            for ticker in sell:
+                qty = owned_positions[ticker]['shares']
+                print(f'Selling {qty} shares of {ticker}')
+                if not testing:
+                    self.place_sell_order(ticker, qty)
+
+            print('Waiting for positions to sell...')
+            while len(self.api.list_orders(status='open')) > 0:
+                time.sleep(3)
+
+            print('Calculating buy amounts...')
+            buy_amounts = self.calculate_buy_amounts(tickers)
+
+            print(buy_amounts)
+            
+            print('Buying tickers...')
+            for ticker in buy_amounts:
+                if buy_amounts[ticker] > 0:
+                    print(f'Buying {buy_amounts[ticker]} shares of {ticker}')
+                    if not testing:
+                        self.place_buy_order(ticker, buy_amounts[ticker])
+            
+            # done for the day, sleeping until market close
+            print('Done for the day, sleeping until market close.')
+            if not clock is None:
+                while clock.is_open:
+                    time.sleep(120)
+                    clock = self.api.get_clock()
+
+            print('Market Closed! Good Night!')
+            if testing:
+                break
+       

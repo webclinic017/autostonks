@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 import json
 import os
 
@@ -18,6 +18,7 @@ load_dotenv()
 API_KEY = os.getenv('API_KEY')
 API_SECRET = os.getenv('API_SECRET')
 
+
 def simple(symbol: str, qty: int = 1, gain: float = 1, loss: float = 1):
     simple_algo = SimpleAlgorithm(API_KEY, API_SECRET)
 
@@ -25,8 +26,9 @@ def simple(symbol: str, qty: int = 1, gain: float = 1, loss: float = 1):
 
     simple_algo.set_max_loss(symbol, loss)
     simple_algo.set_min_gain(symbol, gain)
-    
+
     simple_algo.run()
+
 
 def copycat(symbol: str, daily_budget_percentage: float, min_bal: float):
     copycat = CopyCatAlgorithm(API_KEY, API_SECRET)
@@ -37,16 +39,20 @@ def copycat(symbol: str, daily_budget_percentage: float, min_bal: float):
 
     copycat.run()
 
+
 def ark(symbol: str, mode: str, start_date: str = None, end_date: str = None, limit: int = 100):
     ark = Ark()
     if mode == 'holdings':
-        print(json.dumps(ark.get_etf_holdings(symbol, start_date, end_date, limit), indent=4))
+        print(json.dumps(ark.get_etf_holdings(
+            symbol, start_date, end_date, limit), indent=4))
 
     elif mode == 'trades':
-        print(json.dumps(ark.get_etf_trades(symbol, start_date, end_date, limit), indent=4))
+        print(json.dumps(ark.get_etf_trades(
+            symbol, start_date, end_date, limit), indent=4))
 
     else:
         print('Invalid mode')
+
 
 def historical(symbol: str, timeframe: str = 'day', limit: int = 100):
     base = BaseAlgorithm(API_KEY, API_SECRET)
@@ -55,20 +61,24 @@ def historical(symbol: str, timeframe: str = 'day', limit: int = 100):
         timestamp = arrow.get(bar.t)
         print(f'Date: {timestamp.format("YYYY-MM-DD hh:mm:ss")} Open: {bar.o} Close: {bar.c} High: {bar.h} Low: {bar.l} Volume: {bar.v}')
 
+
 def current(symbol: str):
     base = BaseAlgorithm(API_KEY, API_SECRET)
     barset = base.api.get_barset(symbol, 'minute', limit=1)
     print(barset[symbol][0].c)
 
+
 def yesterday(symbol: str):
     base = BaseAlgorithm(API_KEY, API_SECRET)
     print(base.get_yesterday_price(symbol))
+
 
 def mean(symbol: str, timeframe: str = 'month'):
     mean_reversion = MeanReversionAlgorithm(API_KEY, API_SECRET)
     print(mean_reversion.mean([symbol], timeframe)[symbol])
 
-def mean_reversion(symbols: List[str] | None = None, ticker_file: str = './tickers.txt', cache_means: bool = False, cache_filename: str = './mean_reversion.json', budget: float = 0.0, testing: bool = False):
+
+def mean_reversion(symbols: Union[List[str], None] = None, ticker_file: str = './tickers.txt', cache_means: bool = False, cache_filename: str = './mean_reversion.json', budget: float = 0.0, testing: bool = False):
     mean_reversion = MeanReversionAlgorithm(API_KEY, API_SECRET)
     ticker_file_exists = os.path.exists(ticker_file)
     if symbols is None and not ticker_file_exists:
@@ -85,6 +95,7 @@ def mean_reversion(symbols: List[str] | None = None, ticker_file: str = './ticke
     mean_reversion.set_budget(budget)
     mean_reversion.run(symbols, cache_means, cache_filename, testing)
 
+
 def test():
     # print(f'{symbol} {qty} {gain} {loss}')
     # print(API_KEY)
@@ -92,9 +103,11 @@ def test():
     base = BaseAlgorithm(API_KEY, API_SECRET)
     print(base.get_current_crypto_price('ETH'))
 
+
 def portfolio():
     base = BaseAlgorithm(API_KEY, API_SECRET)
     print(json.dumps(base.get_portfolio(raw=True), indent=4))
-    
+
+
 if __name__ == "__main__":
     fire.Fire()

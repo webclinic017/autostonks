@@ -1,8 +1,13 @@
-from alpaca_trade_api.rest import REST, APIError
+from typing import Union
+
 import arrow
+from alpaca_trade_api.rest import REST, APIError
+
+
 class BaseAlgorithm:
-    def __init__(self, API_KEY: str, API_SECRET: str, base_url: str='https://paper-api.alpaca.markets', api_version: str='v2'):
-        self.api = REST(API_KEY, API_SECRET, base_url=base_url, api_version=api_version)
+    def __init__(self, API_KEY: str, API_SECRET: str, base_url: str = 'https://paper-api.alpaca.markets', api_version: str = 'v2'):
+        self.api = REST(API_KEY, API_SECRET, base_url=base_url,
+                        api_version=api_version)
         self.symbols = {}
         self.holding_count = 0
 
@@ -20,7 +25,7 @@ class BaseAlgorithm:
             return float(self.api.get_position(symbol).qty)
         except APIError:
             return 0
-    
+
     def has_traded_today(self):
         # get the now timestamp
         now = arrow.now().format('YYYY-MM-DD')
@@ -28,10 +33,10 @@ class BaseAlgorithm:
         orders = self.api.list_orders(after=now, status='closed', limit=500)
 
         clock = self.api.get_clock()
-        
+
         return len(orders) > 0 and clock.is_open
 
-    def get_portfolio(self, raw: bool=False):
+    def get_portfolio(self, raw: bool = False):
         self.api._use_raw_data = raw
         positions = self.api.list_positions()
         self.api._use_raw_data = False
@@ -45,7 +50,7 @@ class BaseAlgorithm:
 
     def get_account_cash(self):
         return float(self.api.get_account().cash)
-    
+
     def get_account_buying_power(self):
         return float(self.api.get_account().buying_power)
 
@@ -55,7 +60,7 @@ class BaseAlgorithm:
     def get_current_price(self, symbol: str):
         return float(self.api.get_barset(symbol, 'minute', limit=1)[symbol][0].c)
 
-    def get_current_crypto_price(self, symbol: str, exchange: str='CBSE'):
+    def get_current_crypto_price(self, symbol: str, exchange: str = 'CBSE'):
         q = self.api.get_latest_crypto_quote(symbol + 'USD', exchange)
         return float(q.ap)
 
@@ -77,7 +82,7 @@ class BaseAlgorithm:
             time_in_force='day'
         )
 
-    def place_buy_order(self, symbol: str, qty: float | int):
+    def place_buy_order(self, symbol: str, qty: Union[float, int]):
         return self.api.submit_order(
             symbol=symbol,
             qty=float(qty),
@@ -86,7 +91,7 @@ class BaseAlgorithm:
             time_in_force='day'
         )
 
-    def place_sell_order(self, symbol: str, qty: float | int):
+    def place_sell_order(self, symbol: str, qty: Union[float, int]):
         return self.api.submit_order(
             symbol=symbol,
             qty=float(qty),
@@ -95,40 +100,40 @@ class BaseAlgorithm:
             time_in_force='day'
         )
 
-    def place_limit_buy_order(self, symbol: str, qty: int, limit_price: float):
+    def place_limit_buy_order(self, symbol: str, qty: Union[float, int], limit_price: float):
         return self.api.submit_order(
             symbol=symbol,
-            qty=qty,
+            qty=float(qty),
             side='buy',
             type='limit',
             time_in_force='day',
             limit_price=limit_price
         )
 
-    def place_limit_sell_order(self, symbol: str, qty: int, limit_price: float):
+    def place_limit_sell_order(self, symbol: str, qty: Union[float, int], limit_price: float):
         return self.api.submit_order(
             symbol=symbol,
-            qty=qty,
+            qty=float(qty),
             side='sell',
             type='limit',
             time_in_force='day',
             limit_price=limit_price
         )
 
-    def place_stop_buy_order(self, symbol: str, qty: int, stop_price: float):
+    def place_stop_buy_order(self, symbol: str, qty: Union[float, int], stop_price: float):
         return self.api.submit_order(
             symbol=symbol,
-            qty=qty,
+            qty=float(qty),
             side='buy',
             type='stop',
             time_in_force='day',
             stop_price=stop_price
         )
 
-    def place_stop_sell_order(self, symbol: str, qty: int, stop_price: float):
+    def place_stop_sell_order(self, symbol: str, qty: Union[float, int], stop_price: float):
         return self.api.submit_order(
             symbol=symbol,
-            qty=qty,
+            qty=float(qty),
             side='sell',
             type='stop',
             time_in_force='day',

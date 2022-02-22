@@ -11,6 +11,7 @@ import requests
 
 from . import BaseAlgorithm
 
+
 class MeanReversionAlgorithm(BaseAlgorithm):
     budget = 0.0
 
@@ -43,7 +44,7 @@ class MeanReversionAlgorithm(BaseAlgorithm):
             return {}
 
         return data['data']
-    
+
     def get_owned_positions(self) -> dict:
         positions = self.get_portfolio(raw=True)
         owned_positions = {}
@@ -53,9 +54,9 @@ class MeanReversionAlgorithm(BaseAlgorithm):
             market_value = float(position['market_value'])
             avg_entry_price = float(position['avg_entry_price'])
             owned_positions[symbol] = {
-                'shares': shares, # shares the user owns
-                'market_value': market_value, # market value of the shares
-                'avg_entry_price': avg_entry_price # average buy price of the shares
+                'shares': shares,  # shares the user owns
+                'market_value': market_value,  # market value of the shares
+                'avg_entry_price': avg_entry_price  # average buy price of the shares
             }
         return owned_positions
 
@@ -68,7 +69,8 @@ class MeanReversionAlgorithm(BaseAlgorithm):
             start_date = arrow.now().shift(weeks=-1)
         today = arrow.now().shift(minutes=-30)
         try:
-            bars = self.api.get_bars(symbols, alpaca_timeframe, start=start_date.isoformat(), end=today.isoformat(), limit=10000)
+            bars = self.api.get_bars(symbols, alpaca_timeframe, start=start_date.isoformat(
+            ), end=today.isoformat(), limit=10000)
         except requests.exceptions.HTTPError as e:
             print('HTTPError: {}'.format(e))
             return {}
@@ -83,18 +85,20 @@ class MeanReversionAlgorithm(BaseAlgorithm):
                 bars_by_symbol[bar.S].append(bar)
             else:
                 bars_by_symbol[bar.S] = [bar]
-        
+
         # sort the bars by time
         for symbol in bars_by_symbol:
             bars_by_symbol[symbol].sort(key=lambda bar: bar.t)
             changes_by_symbol[symbol] = []
             for i in range(1, len(bars_by_symbol[symbol])):
-                changes_by_symbol[symbol].append(bars_by_symbol[symbol][i].c - bars_by_symbol[symbol][i-1].c)
-        
+                changes_by_symbol[symbol].append(
+                    bars_by_symbol[symbol][i].c - bars_by_symbol[symbol][i-1].c)
+
         # calculate the mean of the changes
         means = {}
         for symbol in changes_by_symbol:
-            means[symbol] = sum(changes_by_symbol[symbol]) / len(changes_by_symbol[symbol])
+            means[symbol] = sum(changes_by_symbol[symbol]) / \
+                len(changes_by_symbol[symbol])
 
         return means
 
@@ -121,105 +125,117 @@ class MeanReversionAlgorithm(BaseAlgorithm):
                     current_cost += prices[ticker]
                 else:
                     return buy_amounts
-            
 
     def run(self, tickers: List[str], cache_means: bool = False, cache_filename: str = 'mean_reversion.json', testing: bool = False) -> dict:
 
         print('Initialzing Mean Reversion Algorithm')
         print('Waiting for market open....')
 
-        while True:
-            clock = None
-            if not testing:
-                clock = self.api.get_clock()
-
-                if not clock.is_open:
-                    time.sleep(60)
-                    continue
-
-            sell = []
-
-            print('-' * 20)
-            print('Market Open! Good morning!')
-            # pretty print the current local time to console
-            print('The date and time is currently', end=' ')
-            print(arrow.now().format('YYYY-MM-DD HH:mm:ss'))
-
-            print('Getting tickers...')
-            owned_positions = self.get_owned_positions()
-            owned_tickers = list(owned_positions.keys())
-            self.set_tickers(tickers + owned_tickers)
-            
-            print('Clearing orders...')
-            # clear existing orders
-            self.clear_account_orders()
-
-            values = {}
-            cache_invalid = False
-
-            print('Running analysis.....')
-
-            if cache_means and os.path.isfile(cache_filename):
-                print('Loading cached means from {}'.format(cache_filename))
-                values = self.load_cache_file(cache_filename)
-
-            if not values:
-                cache_invalid = True
-                print('Calculating means.....')
-                values = self.mean(self.tickers, 'week')
-                if not values:
-                    print('There was an issue getting data in bulk. Trying again...')
-                    roc = self.mean(self.tickers, 'week')
-                    if roc:
-                        values[ticker] = roc[ticker]
-                
-            sorted_values = OrderedDict(sorted(values.items(), key=lambda x: x[1], reverse=True))
-            
-            if cache_means and cache_invalid:
-                # output to json file
-                self.create_cache_file(sorted_values, cache_filename)
-                    
-            # get all tickers with a mean reversion greater than 0
-            tickers = []
-            for ticker in sorted_values:
-                if sorted_values[ticker] > 0:
-                    tickers.append(ticker)
-            
-            for ticker in self.tickers:
-                if not ticker in tickers and ticker in owned_tickers:
-                    sell.append(ticker)
-                
-            print(f'Selling tickers: {sell}')
-            for ticker in sell:
-                qty = owned_positions[ticker]['shares']
-                print(f'Selling {qty} shares of {ticker}')
+        waitTime = 60
+        waitCount = 0
+        try:
+            while True:
+                clock = None
                 if not testing:
-                    self.place_sell_order(ticker, qty)
-
-            print('Waiting for positions to sell...')
-            while len(self.api.list_orders(status='open')) > 0:
-                time.sleep(3)
-
-            print('Calculating buy amounts...')
-            buy_amounts = self.calculate_buy_amounts(tickers)
-
-            print(buy_amounts)
-            
-            print('Buying tickers...')
-            for ticker in buy_amounts:
-                if buy_amounts[ticker] > 0:
-                    print(f'Buying {buy_amounts[ticker]} shares of {ticker}')
-                    if not testing:
-                        self.place_buy_order(ticker, buy_amounts[ticker])
-            
-            # done for the day, sleeping until market close
-            print('Done for the day, sleeping until market close.')
-            if not clock is None:
-                while clock.is_open:
-                    time.sleep(120)
                     clock = self.api.get_clock()
 
-            print('Market Closed! Good Night!')
-            if testing:
-                break
-       
+                    if not clock.is_open:
+                        time.sleep(60)
+                        continue
+
+                sell = []
+
+                print('-' * 20)
+                print('Market Open! Good morning!')
+                # pretty print the current local time to console
+                print('The date and time is currently', end=' ')
+                print(arrow.now().format('YYYY-MM-DD HH:mm:ss'))
+
+                print('Getting tickers...')
+                owned_positions = self.get_owned_positions()
+                owned_tickers = list(owned_positions.keys())
+                self.set_tickers(tickers + owned_tickers)
+
+                print('Clearing orders...')
+                # clear existing orders
+                self.clear_account_orders()
+
+                values = {}
+                cache_invalid = False
+
+                print('Running analysis.....')
+
+                if cache_means and os.path.isfile(cache_filename):
+                    print('Loading cached means from {}'.format(cache_filename))
+                    values = self.load_cache_file(cache_filename)
+
+                if not values:
+                    cache_invalid = True
+                    print('Calculating means.....')
+                    values = self.mean(self.tickers, 'week')
+                    if not values:
+                        print(
+                            'There was an issue getting data in bulk. Trying again...')
+                        roc = self.mean(self.tickers, 'week')
+                        if roc:
+                            values[ticker] = roc[ticker]
+
+                sorted_values = OrderedDict(
+                    sorted(values.items(), key=lambda x: x[1], reverse=True))
+
+                if cache_means and cache_invalid:
+                    # output to json file
+                    self.create_cache_file(sorted_values, cache_filename)
+
+                # get all tickers with a mean reversion greater than 0
+                tickers = []
+                for ticker in sorted_values:
+                    if sorted_values[ticker] > 0:
+                        tickers.append(ticker)
+
+                for ticker in self.tickers:
+                    if not ticker in tickers and ticker in owned_tickers:
+                        sell.append(ticker)
+
+                print(f'Selling tickers: {sell}')
+                for ticker in sell:
+                    qty = owned_positions[ticker]['shares']
+                    print(f'Selling {qty} shares of {ticker}')
+                    if not testing:
+                        self.place_sell_order(ticker, qty)
+
+                print('Waiting for positions to sell...')
+                while len(self.api.list_orders(status='open')) > 0:
+                    time.sleep(3)
+
+                print('Calculating buy amounts...')
+                buy_amounts = self.calculate_buy_amounts(tickers)
+
+                print(buy_amounts)
+
+                print('Buying tickers...')
+                for ticker in buy_amounts:
+                    if buy_amounts[ticker] > 0:
+                        print(
+                            f'Buying {buy_amounts[ticker]} shares of {ticker}')
+                        if not testing:
+                            self.place_buy_order(ticker, buy_amounts[ticker])
+
+                # done for the day, sleeping until market close
+                print('Done for the day, sleeping until market close.')
+                if not clock is None:
+                    while clock.is_open:
+                        time.sleep(120)
+                        clock = self.api.get_clock()
+
+                print('Market Closed! Good Night!')
+                if testing:
+                    return
+        except Exception as e:
+            print(e)
+            print('Error occurred, waiting and retrying...')
+            time.sleep(waitTime * waitCount)
+            waitCount += 1
+            if waitCount > 10:
+                print('Exceeded wait count, exiting...')
+                return

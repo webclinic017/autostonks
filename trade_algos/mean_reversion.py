@@ -11,6 +11,13 @@ import requests
 
 from . import BaseAlgorithm
 
+# chunk a list into n evenly sized chunks
+
+
+def chunk(lst, n):
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
 
 class MeanReversionAlgorithm(BaseAlgorithm):
     budget = 0.0
@@ -60,6 +67,11 @@ class MeanReversionAlgorithm(BaseAlgorithm):
             }
         return owned_positions
 
+    def check_budget(self):
+        # get current account cash
+        cash = self.get_account_cash()
+        return cash >= self.budget
+
     def mean(self, symbols: List[str], timeframe: str = 'month') -> dict:
         alpaca_timeframe = TimeFrame(1, TimeFrameUnit.Hour)
         start_date = arrow.now().shift(months=-1)
@@ -106,8 +118,11 @@ class MeanReversionAlgorithm(BaseAlgorithm):
 
         budget = self.budget
         cash = self.get_account_cash()
-        if cash < budget or budget == 0:
+        if budget == 0:
             budget = cash
+
+        if cash < budget:
+            return {}
 
         # get the current market price of each ticker in buy
         prices = {}
@@ -126,7 +141,7 @@ class MeanReversionAlgorithm(BaseAlgorithm):
                 else:
                     return buy_amounts
 
-    def run(self, tickers: List[str], cache_means: bool = False, cache_filename: str = 'mean_reversion.json', testing: bool = False) -> dict:
+    def run(self, symbols: List[str], cache_means: bool = False, timeFrame: str = 'month', cache_filename: str = 'mean_reversion.json', testing: bool = False) -> dict:
 
         print('Initialzing Mean Reversion Algorithm')
         print('Waiting for market open....')
@@ -151,14 +166,17 @@ class MeanReversionAlgorithm(BaseAlgorithm):
                 print('The date and time is currently', end=' ')
                 print(arrow.now().format('YYYY-MM-DD HH:mm:ss'))
 
+                print(f"Using {timeFrame} timeframe.")
+
                 print('Getting tickers...')
                 owned_positions = self.get_owned_positions()
                 owned_tickers = list(owned_positions.keys())
-                self.set_tickers(tickers + owned_tickers)
+                self.set_tickers(symbols + owned_tickers)
 
-                print('Clearing orders...')
-                # clear existing orders
-                self.clear_account_orders()
+                if not testing:
+                    print('Clearing orders...')
+                    # clear existing orders
+                    self.clear_account_orders()
 
                 values = {}
                 cache_invalid = False
@@ -172,13 +190,18 @@ class MeanReversionAlgorithm(BaseAlgorithm):
                 if not values:
                     cache_invalid = True
                     print('Calculating means.....')
-                    values = self.mean(self.tickers, 'week')
-                    if not values:
-                        print(
-                            'There was an issue getting data in bulk. Trying again...')
-                        roc = self.mean(self.tickers, 'week')
-                        if roc:
-                            values[ticker] = roc[ticker]
+                    chunks = chunk(self.tickers, 10)
+                    for ticker_chunk in chunks:
+                        chunk_values = self.mean(ticker_chunk, timeFrame)
+                        # combine values and chunk_values
+                        values.update(chunk_values)
+                        if not values:
+                            print(
+                                'There was an issue getting data in bulk. Trying again...')
+                            for t in ticker_chunk:
+                                roc = self.mean([t], timeFrame)
+                                if roc:
+                                    values[ticker] = roc[ticker]
 
                 sorted_values = OrderedDict(
                     sorted(values.items(), key=lambda x: x[1], reverse=True))
@@ -209,9 +232,16 @@ class MeanReversionAlgorithm(BaseAlgorithm):
                     time.sleep(3)
 
                 print('Calculating buy amounts...')
+
+                # if there are more than 10 tickers, only buy the top 10
+                if len(tickers) > 10:
+                    tickers = tickers[:10]
+                    print(
+                        f"More than 10 top stocks, only buying top 10: {tickers}")
+
                 buy_amounts = self.calculate_buy_amounts(tickers)
 
-                print(buy_amounts)
+                # print(buy_amounts)
 
                 print('Buying tickers...')
                 for ticker in buy_amounts:

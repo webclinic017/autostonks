@@ -78,7 +78,7 @@ def mean(symbol: str, timeframe: str = 'month'):
     print(mean_reversion.mean([symbol], timeframe)[symbol])
 
 
-def mean_reversion(symbols: Union[List[str], None] = None, ticker_file: str = './tickers.txt', cache_means: bool = False, cache_filename: str = './mean_reversion.json', budget: float = 0.0, testing: bool = False):
+def mean_reversion(symbols: Union[List[str], None] = None, ticker_file: str = './tickers.txt', cache_means: bool = False, cache_filename: str = './mean_reversion.json', budget: float = 0.0, testing: bool = False, timeframe: str = 'month'):
     mean_reversion = MeanReversionAlgorithm(API_KEY, API_SECRET)
     ticker_file_exists = os.path.exists(ticker_file)
     if symbols is None and not ticker_file_exists:
@@ -93,7 +93,8 @@ def mean_reversion(symbols: Union[List[str], None] = None, ticker_file: str = '.
         cache_means = True
 
     mean_reversion.set_budget(budget)
-    mean_reversion.run(symbols, cache_means, cache_filename, testing)
+    mean_reversion.run(symbols, cache_means, timeframe,
+                       cache_filename, testing)
 
 
 def test():

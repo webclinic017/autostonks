@@ -19,8 +19,43 @@ def chunk(lst, n):
         yield lst[i:i + n]
 
 
+def create_blacklist(path: str, symbols: List[str] = []):
+    values = {}
+    for symbol in symbols:
+        values[symbol] = arrow.now().shift(months=1).timestamp
+    with open(path, 'w') as f:
+        json.dump(values, f)
+
+
+def create_cache_file(data: dict, filename: str):
+    # get the date now
+    now = arrow.utcnow()
+    output_data = {
+        'date': now.isoformat(),
+        'data': data
+    }
+    with open(filename, 'w') as f:
+        json.dump(output_data, f, indent=4)
+
+
+def load_cache_file(filename: str) -> dict:
+    with open(filename, 'r') as f:
+        data = json.load(f)
+    date = arrow.get(data['date'])
+
+    # check if the cache file is older than 12 hours
+    # if it is, return empty data and delete the file
+    now = arrow.utcnow()
+    if now - date > timedelta(hours=12):
+        os.remove(filename)
+        return {}
+
+    return data['data']
+
+
 class MeanReversionAlgorithm(BaseAlgorithm):
     budget = 0.0
+    blacklist_path = 'blacklist.json'
 
     def set_tickers(self, tickers: List[str]):
         self.tickers = list(set(tickers))
@@ -28,29 +63,44 @@ class MeanReversionAlgorithm(BaseAlgorithm):
     def set_budget(self, budget: float):
         self.budget = budget
 
-    def create_cache_file(self, data: dict, filename: str):
-        # get the date now
-        now = arrow.utcnow()
-        output_data = {
-            'date': now.isoformat(),
-            'data': data
-        }
-        with open(filename, 'w') as f:
-            json.dump(output_data, f, indent=4)
+    def add_to_blacklist(self, ticker: str):
+        # check if blacklist exists
+        if os.path.exists(self.blacklist_path):
+            # append the ticker to the blacklist
+            with open(self.blacklist_path, 'r') as f:
+                blacklist = json.load(f)
+            blacklist[ticker] = arrow.now().shift(months=1).timestamp
+            with open(self.blacklist_path, 'w') as f:
+                json.dump(blacklist, f)
+        else:
+            # create the blacklist
+            create_blacklist(self.blacklist_path, [ticker])
 
-    def load_cache_file(self, filename: str) -> dict:
-        with open(filename, 'r') as f:
-            data = json.load(f)
-        date = arrow.get(data['date'])
+    def remove_from_blacklist(self, ticker: str):
+        # check if blacklist exists
+        if os.path.exists(self.blacklist_path):
+            # append the ticker to the blacklist
+            with open(self.blacklist_path, 'r') as f:
+                blacklist = json.load(f)
+            if ticker in blacklist:
+                del blacklist[ticker]
+                with open(self.blacklist_path, 'w') as f:
+                    json.dump(blacklist, f)
+        # otherwise, do nothing
 
-        # check if the cache file is older than 12 hours
-        # if it is, return empty data and delete the file
-        now = arrow.utcnow()
-        if now - date > timedelta(hours=12):
-            os.remove(filename)
-            return {}
+    def get_blacklist(self) -> dict:
+        if os.path.exists(self.blacklist_path):
+            with open(self.blacklist_path, 'r') as f:
+                blacklist = json.load(f)
+        else:
+            blacklist = {}
+        return blacklist
 
-        return data['data']
+    # def stop_loss(self):
+    #     positions = self.get_owned_positions()
+    #     for symbol, position in positions.items():
+    #         if position['market_value'] < position['avg_entry_price'] * 0.95:
+    #             self.sell_all(symbol)
 
     def get_owned_positions(self) -> dict:
         positions = self.get_portfolio(raw=True)
@@ -66,11 +116,6 @@ class MeanReversionAlgorithm(BaseAlgorithm):
                 'avg_entry_price': avg_entry_price  # average buy price of the shares
             }
         return owned_positions
-
-    def check_budget(self):
-        # get current account cash
-        cash = self.get_account_cash()
-        return cash >= self.budget
 
     def mean(self, symbols: List[str], timeframe: str = 'month') -> dict:
         alpaca_timeframe = TimeFrame(1, TimeFrameUnit.Hour)
@@ -114,14 +159,15 @@ class MeanReversionAlgorithm(BaseAlgorithm):
 
         return means
 
-    def calculate_buy_amounts(self, tickers: List[str]) -> dict:
+    def calculate_buy_amounts(self, tickers: List[str], testing: bool = False) -> dict:
 
         budget = self.budget
         cash = self.get_account_cash()
         if budget == 0:
             budget = cash
 
-        if cash < budget:
+        if cash < budget and not testing:
+            print('Not enough cash in budget, skipping today....')
             return {}
 
         # get the current market price of each ticker in buy
@@ -185,7 +231,7 @@ class MeanReversionAlgorithm(BaseAlgorithm):
 
                 if cache_means and os.path.isfile(cache_filename):
                     print('Loading cached means from {}'.format(cache_filename))
-                    values = self.load_cache_file(cache_filename)
+                    values = load_cache_file(cache_filename)
 
                 if not values:
                     cache_invalid = True
@@ -208,7 +254,7 @@ class MeanReversionAlgorithm(BaseAlgorithm):
 
                 if cache_means and cache_invalid:
                     # output to json file
-                    self.create_cache_file(sorted_values, cache_filename)
+                    create_cache_file(sorted_values, cache_filename)
 
                 # get all tickers with a mean reversion greater than 0
                 tickers = []
@@ -239,7 +285,7 @@ class MeanReversionAlgorithm(BaseAlgorithm):
                     print(
                         f"More than 10 top stocks, only buying top 10: {tickers}")
 
-                buy_amounts = self.calculate_buy_amounts(tickers)
+                buy_amounts = self.calculate_buy_amounts(tickers, testing)
 
                 # print(buy_amounts)
 

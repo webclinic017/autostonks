@@ -24,3 +24,12 @@ Now you development environment is set up.
 ### API Keys and .env file
 
 To generate API keys, you need to [create an account on Alpaca](https://alpaca.markets/). You don't need to create a live account if you don't want to, you can just create a paper account to test development. Once you finish creating your account, you can open up the [Paper Dashboard](https://app.alpaca.markets/paper/dashboard/overview) before adding bank account and tax information so you can get to development without using money.
+
+From the dashboard, you can generate API Keys and populate the .env file.
+
+```sh
+# .env
+BASE_URL=https://paper-api.alpaca.markets
+API_KEY=abcdefghijkl
+API_SECRET=abcdefghijklmnopqrstuvwxyz1234567890
+```

@@ -2,11 +2,25 @@
 
 ## Getting started.
 
-Requires Python 3.9 to be installed.
+Requires [Python 3.8 or newer](https://www.python.org/downloads/) to be installed.
 
-```
+Dependency management is done via [Pipenv](https://pipenv.pypa.io/en/latest/). This can be installed via Pip.
+
+```sh
 pip install pipenv
+```
+
+### Cloning and installing dependencies
+
+```sh
+git clone https://github.com/CasualCodersProjects/autostonks
+cd autostonks
 pipenv install
 pipenv shell
-python stonks.py <options>
 ```
+
+Now you development environment is set up.
+
+### API Keys and .env file
+
+To generate API keys, you need to [create an account on Alpaca](https://alpaca.markets/). You don't need to create a live account if you don't want to, you can just create a paper account to test development. Once you finish creating your account, you can open up the [Paper Dashboard](https://app.alpaca.markets/paper/dashboard/overview) before adding bank account and tax information so you can get to development without using money.

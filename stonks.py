@@ -20,6 +20,7 @@ API_SECRET = os.getenv('API_SECRET')
 
 
 def simple(symbol: str, qty: int = 1, gain: float = 1, loss: float = 1):
+    '''Executes the simple algorithm.'''
     simple_algo = SimpleAlgorithm(API_KEY, API_SECRET)
 
     simple_algo.add_symbol(symbol, qty=qty)
@@ -31,6 +32,7 @@ def simple(symbol: str, qty: int = 1, gain: float = 1, loss: float = 1):
 
 
 def copycat(symbol: str, daily_budget_percentage: float, min_bal: float):
+    '''Executes the copycat algorithm.'''
     copycat = CopyCatAlgorithm(API_KEY, API_SECRET)
 
     copycat.set_etf_symbol(symbol)
@@ -41,6 +43,7 @@ def copycat(symbol: str, daily_budget_percentage: float, min_bal: float):
 
 
 def ark(symbol: str, mode: str, start_date: str = None, end_date: str = None, limit: int = 100):
+    '''Prints the ARK holdings for the given ARK ticker.'''
     ark = Ark()
     if mode == 'holdings':
         print(json.dumps(ark.get_etf_holdings(
@@ -55,6 +58,7 @@ def ark(symbol: str, mode: str, start_date: str = None, end_date: str = None, li
 
 
 def historical(symbol: str, timeframe: str = 'day', limit: int = 100):
+    '''Prints the historical price of the given ticker.'''
     base = BaseAlgorithm(API_KEY, API_SECRET)
     bars = base.api.get_barset(symbol, timeframe, limit)
     for bar in bars[symbol]:
@@ -63,22 +67,26 @@ def historical(symbol: str, timeframe: str = 'day', limit: int = 100):
 
 
 def current(symbol: str):
+    '''Prints the current price of the given ticker.'''
     base = BaseAlgorithm(API_KEY, API_SECRET)
     barset = base.api.get_barset(symbol, 'minute', limit=1)
     print(barset[symbol][0].c)
 
 
 def yesterday(symbol: str):
+    '''Prints yesterday's stock price of the given ticker.'''
     base = BaseAlgorithm(API_KEY, API_SECRET)
     print(base.get_yesterday_price(symbol))
 
 
 def mean(symbol: str, timeframe: str = 'month'):
+    '''Gets the average rate of change for the given ticker.'''
     mean_reversion = MeanReversionAlgorithm(API_KEY, API_SECRET)
     print(mean_reversion.mean([symbol], timeframe)[symbol])
 
 
 def mean_reversion(symbols: Union[List[str], None] = None, ticker_file: str = './tickers.txt', cache_means: bool = False, cache_filename: str = './mean_reversion.json', budget: float = 0.0, testing: bool = False, timeframe: str = 'month'):
+    '''Executes the mean reversion algorithm.'''
     mean_reversion = MeanReversionAlgorithm(API_KEY, API_SECRET)
     ticker_file_exists = os.path.exists(ticker_file)
     if symbols is None and not ticker_file_exists:
@@ -98,6 +106,7 @@ def mean_reversion(symbols: Union[List[str], None] = None, ticker_file: str = '.
 
 
 def test():
+    '''Used for testing.'''
     # print(f'{symbol} {qty} {gain} {loss}')
     # print(API_KEY)
     # print(API_SECRET)
@@ -106,6 +115,7 @@ def test():
 
 
 def portfolio():
+    '''Prints your current portfolio.'''
     base = BaseAlgorithm(API_KEY, API_SECRET)
     print(json.dumps(base.get_portfolio(raw=True), indent=4))
 

@@ -33,3 +33,13 @@ BASE_URL=https://paper-api.alpaca.markets
 API_KEY=abcdefghijkl
 API_SECRET=abcdefghijklmnopqrstuvwxyz1234567890
 ```
+
+### Running the bot
+
+The bot is written with Fire, which generates a command line tool from Python functions. The current usage is:
+
+```sh
+python stonks.py -h
+```
+
+This will print out help information.

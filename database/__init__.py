@@ -37,6 +37,14 @@ def get_most_recent_holding(session: Session, ticker: str) -> Holding | None:
     return results[0]
 
 
+def add_holding(session: Session, holding: Holding):
+    """
+    Add a holding to the database
+    """
+    session.add(holding)
+    session.commit()
+
+
 if __name__ == "__main__":
     from sqlmodel import create_engine, SQLModel
     engine = create_engine("sqlite:///test.db")

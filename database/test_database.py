@@ -4,7 +4,7 @@ import arrow
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
 
-from database import get_all_holdings, get_most_recent_holding
+from database import get_all_holdings, get_most_recent_holding, add_holding
 from database.model import Holding
 
 
@@ -15,17 +15,14 @@ def setup_db():
 
     with Session(engine) as session:
         holding = Holding(ticker="AAPL", shares=100, buy_price=100.00)
-        session.add(holding)
-        session.commit()
+        add_holding(session, holding)
 
         holding = Holding(ticker="MSFT", shares=100, buy_price=100.00)
-        session.add(holding)
-        session.commit()
+        add_holding(session, holding)
 
         holding = Holding(ticker="AAPL", shares=200,
                           buy_price=50.00, buy_date=arrow.now().shift(weeks=-2).isoformat())
-        session.add(holding)
-        session.commit()
+        add_holding(session, holding)
 
     yield
 

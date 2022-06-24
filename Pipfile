@@ -12,6 +12,7 @@ arrow = "*"
 numpy = "*"
 sqlmodel = "*"
 newsapi-python = "*"
+bs4 = "*"
 
 [dev-packages]
 pytest = "*"

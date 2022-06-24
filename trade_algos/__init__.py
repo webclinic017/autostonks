@@ -1,7 +1,7 @@
 from typing import Union
 
 import arrow
-from alpaca_trade_api.rest import REST, APIError
+from alpaca_trade_api.rest import REST, APIError, TimeFrame
 
 
 class BaseAlgorithm:
@@ -58,15 +58,16 @@ class BaseAlgorithm:
         return float(self.api.get_account().equity)
 
     def get_current_price(self, symbol: str):
-        return float(self.api.get_barset(symbol, 'minute', limit=1)[symbol][0].c)
+        return float(self.api.get_bars(symbol, TimeFrame.Minute, limit=1)[0].c)
 
     def get_current_crypto_price(self, symbol: str, exchange: str = 'CBSE'):
         q = self.api.get_latest_crypto_quote(symbol + 'USD', exchange)
         return float(q.ap)
 
     def get_yesterday_price(self, symbol: str):
-        barset = self.api.get_barset(symbol, 'day', limit=2)
-        return float(barset[symbol][-1].c)
+        barset = self.api.get_bars(
+            symbol, TimeFrame.Day, start=arrow.now().shift(days=-1).isoformat(), limit=2)
+        return float(barset[-1].c)
 
     def clear_account_orders(self):
         orders = self.api.list_orders(status='open')

@@ -5,6 +5,7 @@ import os
 import arrow
 import fire
 from dotenv import load_dotenv
+from alpaca_trade_api.rest import TimeFrame
 
 from ark_wrapper import Ark
 from trade_algos import BaseAlgorithm
@@ -60,8 +61,28 @@ def ark(symbol: str, mode: str, start_date: str = None, end_date: str = None, li
 def historical(symbol: str, timeframe: str = 'day', limit: int = 100):
     '''Prints the historical price of the given ticker.'''
     base = BaseAlgorithm(API_KEY, API_SECRET)
-    bars = base.api.get_barset(symbol, timeframe, limit)
-    for bar in bars[symbol]:
+
+    timeframe_table = {
+        'minute': TimeFrame.Minute,
+        'hour': TimeFrame.Hour,
+        'day': TimeFrame.Day,
+        'week': TimeFrame.Week,
+        'month': TimeFrame.Month,
+    }
+
+    # 15 minutes ago
+    end = arrow.now().shift(hours=-1)
+    end_str = end.isoformat()
+    print(end_str)
+
+    # 100 days ago
+    start = end.shift(days=-100)
+    start_str = start.isoformat()
+    print(start_str)
+
+    bars = base.api.get_bars(
+        symbol, timeframe_table[timeframe], start=start_str, end=end_str, limit=limit)
+    for bar in bars:
         timestamp = arrow.get(bar.t)
         print(f'Date: {timestamp.format("YYYY-MM-DD hh:mm:ss")} Open: {bar.o} Close: {bar.c} High: {bar.h} Low: {bar.l} Volume: {bar.v}')
 
@@ -69,8 +90,8 @@ def historical(symbol: str, timeframe: str = 'day', limit: int = 100):
 def current(symbol: str):
     '''Prints the current price of the given ticker.'''
     base = BaseAlgorithm(API_KEY, API_SECRET)
-    barset = base.api.get_barset(symbol, 'minute', limit=1)
-    print(barset[symbol][0].c)
+    barset = base.api.get_bars(symbol, TimeFrame.Minute, limit=1)
+    print(barset[0].c)
 
 
 def yesterday(symbol: str):

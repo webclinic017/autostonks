@@ -59,4 +59,4 @@ if __name__ == '__main__':
     # I'm not sure if the tickers are all correct
     # will have to check if they're correct and remove all characters that are not relevant
 
-    print(json.dumps(get_article_data(article_html), indent=4))
+    print(json.dumps(get_article_data(article_html)))
